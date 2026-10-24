@@ -1,0 +1,248 @@
+/**
+ * Field-level types for every JSON file in the database repo.
+ *
+ * These mirror exactly what app.js on the live site reads — see
+ * page-schemas.ts for the declarative "which field lives at which JSON
+ * path, and what kind of editor it needs" layer built on top of these.
+ */
+
+export interface DatabaseIndex {
+  imageBase: string;
+  home: string;
+  myStory: string;
+  educationExperience: string;
+  gisProjects: string;
+  researchPublications: string;
+  conferences: string;
+  posters: string;
+  /** Optional: URL of site-text.json (wording overrides). */
+  siteText?: string;
+}
+
+/** The seven page-data keys, in database.json / dbKey form. */
+export type PageKey =
+  | "home"
+  | "myStory"
+  | "educationExperience"
+  | "gisProjects"
+  | "researchPublications"
+  | "conferences"
+  | "posters";
+
+/** The site's own kebab-case slugs (HTML data-page / URL folder names). */
+export type PageSlug =
+  | "home"
+  | "my-story"
+  | "education-experience"
+  | "gis-projects"
+  | "research-publications"
+  | "conferences"
+  | "posters";
+
+export const SLUG_TO_PAGE_KEY: Record<PageSlug, PageKey> = {
+  home: "home",
+  "my-story": "myStory",
+  "education-experience": "educationExperience",
+  "gis-projects": "gisProjects",
+  "research-publications": "researchPublications",
+  conferences: "conferences",
+  posters: "posters"
+};
+
+export const PAGE_KEY_TO_SLUG: Record<PageKey, PageSlug> = {
+  home: "home",
+  myStory: "my-story",
+  educationExperience: "education-experience",
+  gisProjects: "gis-projects",
+  researchPublications: "research-publications",
+  conferences: "conferences",
+  posters: "posters"
+};
+
+/**
+ * The real deployed site's URL folder per page — NOT the same as PageSlug
+ * for two pages: the "gis-projects" / "research-publications" data-page
+ * identifiers live at the folders /projects/ and /publications/. Home is "".
+ * Used to build correct links inside the live-preview iframe.
+ */
+export const PAGE_KEY_TO_SITE_FOLDER: Record<PageKey, string> = {
+  home: "",
+  myStory: "my-story",
+  educationExperience: "education-experience",
+  gisProjects: "projects",
+  researchPublications: "publications",
+  conferences: "conferences",
+  posters: "posters"
+};
+
+export interface SocialLink {
+  label: string;
+  url: string;
+  icon: string;
+}
+
+export interface NewsItem {
+  date: string;
+  text: string;
+  link?: string;
+  label?: string;
+}
+
+export interface GalleryImage {
+  image: string;
+  alt?: string;
+}
+
+export interface TimelineEntry {
+  period: string;
+  institution: string;
+  role: string;
+  details?: string;
+}
+
+/** Shape used by home.json's own (independent, curated) projects array. */
+export interface HomeProjectTeaser {
+  id: string;
+  title: string;
+  image?: string;
+  description?: string;
+  meta?: string;
+}
+
+/** Shape used by projects.json's full list. */
+export interface ProjectItem {
+  id: string;
+  /** Which Projects-page segment this project is listed under (an id from ProjectsData.categories). */
+  category?: string;
+  title: string;
+  image?: string;
+  meta?: string;
+  /** Short blurb shown on project cards (home + the Projects listing). */
+  summary?: string;
+  /** Full on-demand detail-page body — same shape as My Story's sections. */
+  sections?: ContentSection[];
+}
+
+export interface PublicationItem {
+  id: string;
+  year: string;
+  title: string;
+  authors: string;
+  status?: string;
+  link?: string;
+}
+
+/** One poster or presentation: a card on the Poster presentations page plus its on-demand detail page. */
+export interface PosterItem {
+  id: string;
+  title: string;
+  image?: string;
+  /** Venue / date line shown on the card and above the detail title. */
+  meta?: string;
+  /** Short blurb shown on the poster's card. */
+  summary?: string;
+  /** Detail-page body — same shape as project sections, but blocks may also be PDFs. */
+  sections?: ContentSection[];
+}
+
+/** An uploaded certificate image (Education & Experience page). */
+export interface CertificateItem {
+  image: string;
+  caption?: string;
+}
+
+/** One piece of a section's body, in the order it should appear — an article-style mix of text and photos. */
+export type ContentBlock =
+  | { type: "paragraph"; text: string }
+  | { type: "image"; image: string; alt?: string }
+  /** An uploaded PDF (posters only): page 1 is shown in full, the rest scroll. `caption` sits underneath. */
+  | { type: "pdf"; pdf: string; caption?: string };
+
+/** A repeatable content block used by both My Story and Project detail pages. */
+export interface ContentSection {
+  heading?: string;
+  content: ContentBlock[];
+}
+
+export interface HomeData {
+  page: "home";
+  site: { title: string; description?: string };
+  person: {
+    name: string;
+    intro?: string;
+    location?: string;
+    email?: string;
+    phone?: string;
+    socials: SocialLink[];
+  };
+  heroImage?: string;
+  news: NewsItem[];
+  gallery: GalleryImage[];
+  education: TimelineEntry[];
+  experience: TimelineEntry[];
+  projects: HomeProjectTeaser[];
+  publications: PublicationItem[];
+  contact: { email: string; phone?: string; location?: string };
+}
+
+export interface MyStoryData {
+  page: "my-story";
+  title: string;
+  heading: string;
+  intro?: string;
+  sections: ContentSection[];
+}
+
+export interface EducationExperienceData {
+  page: "education-experience";
+  title: string;
+  heading: string;
+  education: TimelineEntry[];
+  experience: TimelineEntry[];
+  certificates?: CertificateItem[];
+}
+
+export interface ProjectsData {
+  page: "gis-projects";
+  title: string;
+  heading: string;
+  intro?: string;
+  /** Projects-page segments, in display order. */
+  categories?: { id: string; label: string }[];
+  projects: ProjectItem[];
+}
+
+export interface PublicationsData {
+  page: "research-publications";
+  title: string;
+  heading: string;
+  publications: PublicationItem[];
+}
+
+export interface ConferencesData {
+  page: "conferences";
+  title: string;
+  heading: string;
+  intro?: string;
+  sections: ContentSection[];
+}
+
+export interface PostersData {
+  page: "posters";
+  title: string;
+  heading: string;
+  intro?: string;
+  posters: PosterItem[];
+}
+
+export type PageDataMap = {
+  home: HomeData;
+  myStory: MyStoryData;
+  educationExperience: EducationExperienceData;
+  gisProjects: ProjectsData;
+  researchPublications: PublicationsData;
+  conferences: ConferencesData;
+  posters: PostersData;
+};
+
+export type AnyPageData = PageDataMap[PageKey];
