@@ -69,7 +69,7 @@ export const GROUP_LABELS: Record<string, string> = {
   edu: "Education & Experience page",
   projects: "Projects page",
   publications: "Research Publications page",
-  conferences: "Seminars & Conferences page",
+  conferences: "Conferences, Seminars and Training page",
   posters: "Poster presentations page",
   card: "Cards & buttons",
   detail: "Detail pages",

@@ -313,7 +313,7 @@ export const useContentStore = create<ContentStore>((set, get) => ({
           set({
             saveStatus: "error",
             storageLimitHit: true,
-            saveError: parsed.error ?? "Storage limit reached — failed to save. The files are too large to upload in one save. Remove some photos or use smaller files, then save again."
+            saveError: parsed.error ?? "Storage limit reached — failed to save. The files are too large to upload in one save. Remove some photos or PDFs, or use smaller files, then save again."
           });
           void get().refreshStorage();
           return;

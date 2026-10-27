@@ -69,8 +69,8 @@ export function checkPhotosLimit(
 /** Message shown to the admin when a save is refused. */
 export function limitMessage(check: PhotosLimitCheck): string {
   return (
-    `Storage limit reached — failed to save. The photos folder would grow to ${formatMB(check.projectedBytes)}, ` +
+    `Storage limit reached — failed to save. The media storage would grow to ${formatMB(check.projectedBytes)}, ` +
     `but the maximum is ${formatMB(check.limitBytes)} (currently ${formatMB(check.currentBytes)}). ` +
-    `Nothing was uploaded. Remove some photos or use smaller files, then save again.`
+    `Nothing was uploaded. Remove some photos or PDFs, or use smaller files, then save again.`
   );
 }

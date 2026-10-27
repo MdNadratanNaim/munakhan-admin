@@ -13,17 +13,17 @@
     "cf:deploy": "opennextjs-cloudflare deploy"
   },
   "dependencies": {
-    "next": "latest",
-    "react": "latest",
-    "react-dom": "latest",
+    "next": "^16.4.3",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "zustand": "latest"
   },
   "devDependencies": {
-    "typescript": "latest",
+    "@opennextjs/cloudflare": "^1.20.13",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
-    "@opennextjs/cloudflare": "latest",
-    "wrangler": "latest"
+    "typescript": "latest",
+    "wrangler": "^4.153.0"
   }
 }

@@ -156,7 +156,7 @@ export class GithubProvider implements DataProvider {
     const listing = await this.githubJson<{ truncated: boolean; tree: { path: string; type: string; size?: number }[] }>(
       `/repos/${owner}/${name}/git/trees/${photos.sha}?recursive=1`
     );
-    if (listing.truncated) throw new Error("The photos folder is too large to measure — refusing to save.");
+    if (listing.truncated) throw new Error("The media storage is too large to measure — refusing to save.");
     for (const entry of listing.tree) {
       if (entry.type === "blob") sizes.set(`photos/${entry.path}`, entry.size ?? 0);
     }

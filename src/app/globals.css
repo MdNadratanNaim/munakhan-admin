@@ -1306,7 +1306,7 @@ select {
   font-family: var(--font-ui);
 }
 
-/* Seminars & Conferences: same rule as the website — cap the height, never crop; the width shrinks instead. */
+/* Conferences, Seminars and Training: same rule as the website — cap the height, never crop; the width shrinks instead. */
 [data-page="conferences"] .block-image .editable-image {
   width: auto;
   max-width: 100%;
@@ -1998,5 +1998,39 @@ select {
   * {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+/* Minimal one-card-per-row list (publications): text on the left, actions on the right, no thumbnail */
+.card-grid-rows {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.card-grid-rows .card-grid-item {
+  flex-direction: row;
+  align-items: center;
+}
+
+.card-grid-rows .card-grid-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-grid-rows .card-grid-actions {
+  border-top: 0;
+  padding: 10px 14px;
+  flex-shrink: 0;
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .card-grid-rows .card-grid-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .card-grid-rows .card-grid-actions {
+    border-top: 1px solid var(--line);
   }
 }

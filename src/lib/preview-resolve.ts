@@ -14,7 +14,7 @@ export function resolveImagesForPreview<T>(fields: FieldDef[], data: T, resolve:
   function walk(fieldList: FieldDef[], basePath: PathSegment[]) {
     for (const field of fieldList) {
       const path = [...basePath, field.key];
-      if (field.kind === "image") {
+      if (field.kind === "image" || field.kind === "pdf") {
         const current = getAtPath(result, path) as string | undefined;
         const resolved = resolve(current);
         if (resolved !== current) result = setAtPath(result, path, resolved ?? "");

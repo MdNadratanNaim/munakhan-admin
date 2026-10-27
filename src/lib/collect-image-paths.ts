@@ -15,7 +15,7 @@ export function collectImagePaths(fields: FieldDef[], data: unknown): Set<string
     const record = node as Record<string, unknown>;
     for (const field of fieldList) {
       const value = record[field.key];
-      if (field.kind === "image") {
+      if (field.kind === "image" || field.kind === "pdf") {
         if (typeof value === "string" && value) paths.add(value);
       } else if (field.kind === "group") {
         walk(field.fields, value);

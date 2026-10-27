@@ -42,7 +42,9 @@ export type FieldDef =
       cards?: CardsConfig;
     }
   /** An ordered, article-style mix of paragraph and image blocks (and PDFs when `allowPdf`) — see BlockListEditor. */
-  | { kind: "blockList"; key: string; label: string; allowPdf?: boolean };
+  | { kind: "blockList"; key: string; label: string; allowPdf?: boolean }
+  /** One uploaded PDF (stored as a path like the "image" field; can be replaced or removed). */
+  | { kind: "pdf"; key: string; label: string };
 
 /** How an item of a card-style list is summarised on its card (which of its fields to show). */
 export interface CardsConfig {
@@ -54,6 +56,11 @@ export interface CardsConfig {
   summaryKey?: string;
   /** A "select" field whose chosen option's label is shown as a badge on the card. */
   badgeKey?: string;
+  /** Minimal one-card-per-row layout without a thumbnail (used for publications). */
+  layout?: "rows";
+  /** If this field holds a value, a small `flagLabel` chip is shown on the card (e.g. "PDF"). */
+  flagKey?: string;
+  flagLabel?: string;
 }
 
 /**
@@ -207,7 +214,11 @@ export const homeSchema: PageSchema = {
         masterPath: ["publications"],
         itemTitle: (p) => String(p.title ?? "Untitled publication"),
         itemSubtitle: (p) => (p.year ? String(p.year) : undefined),
-        toItem: (p) => ({ ...p })
+        // The pinned copy keeps the card fields only; if the original has a PDF the card links to its page.
+        toItem: (p) => {
+          const { pdf, ...card } = p as Record<string, unknown>;
+          return pdf ? { ...card, hasPage: true } : { ...card };
+        }
       }
     },
     {
@@ -311,14 +322,22 @@ export const researchPublicationsSchema: PageSchema = {
   fields: [
     { kind: "text", key: "title", label: "Browser tab title (not shown on the page)" },
     { kind: "text", key: "heading", label: "Page heading", as: "h1" },
-    { kind: "list", key: "publications", label: "Publications", itemLabel: "Publication", itemFields: publicationItemFields, autoId: true }
+    {
+      kind: "list",
+      key: "publications",
+      label: "Publications",
+      itemLabel: "Publication",
+      autoId: true,
+      cards: { newItemTitle: "Untitled publication", titleKey: "title", metaKey: "year", summaryKey: "authors", layout: "rows", flagKey: "pdf", flagLabel: "PDF" },
+      itemFields: [...publicationItemFields, { kind: "pdf", key: "pdf", label: "PDF of the paper (optional — the publication then opens its own page showing it)" }]
+    }
   ]
 };
 
 export const conferencesSchema: PageSchema = {
   key: "conferences",
   slug: "conferences",
-  title: "Seminars & Conferences",
+  title: "Conferences, Seminars and Training",
   fields: [
     { kind: "text", key: "title", label: "Browser tab title (not shown on the page)" },
     { kind: "text", key: "heading", label: "Page heading", as: "h1" },

@@ -46,6 +46,7 @@ export function CardGrid({ pageKey, path, items, field }: CardGridProps) {
   };
   if (!cards) return null;
   const noun = field.itemLabel.toLowerCase();
+  const rowsLayout = cards.layout === "rows";
   const needle = filter.trim().toLowerCase();
   const filtering = needle.length > 0;
 
@@ -69,7 +70,8 @@ export function CardGrid({ pageKey, path, items, field }: CardGridProps) {
     const summary = plain(cards.summaryKey ? item[cards.summaryKey] : "");
     const badge = optionLabel(cards.badgeKey, cards.badgeKey ? item[cards.badgeKey] : "");
     const image = cards.imageKey ? imagePreviewUrl(item[cards.imageKey] as string | undefined) : undefined;
-    return { index, id, title, meta, summary, badge, image };
+    const flag = cards.flagKey && item[cards.flagKey] ? (cards.flagLabel ?? "") : "";
+    return { index, id, title, meta, summary, badge, image, flag };
   });
   const shown = filtering ? rows.filter((r) => `${r.title} ${r.meta} ${r.summary} ${r.badge}`.toLowerCase().includes(needle)) : rows;
 
@@ -91,24 +93,27 @@ export function CardGrid({ pageKey, path, items, field }: CardGridProps) {
         </button>
       </div>
 
-      <div className="card-grid">
-        {shown.map(({ index, id, title, meta, summary, badge, image }) => {
+      <div className={rowsLayout ? "card-grid card-grid-rows" : "card-grid"}>
+        {shown.map(({ index, id, title, meta, summary, badge, image, flag }) => {
           const href = `/${PAGE_KEY_TO_SLUG[pageKey]}/${encodeURIComponent(id)}`;
           return (
             <article className="card-grid-item" key={id || index}>
-              <Link className="card-grid-thumb" href={href} aria-label={`Edit ${title}`} tabIndex={-1}>
-                {image ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- static/staged files, no Next Image optimizer on Cloudflare
-                  <img src={image} alt="" />
-                ) : (
-                  <div className="card-grid-noimg">
-                    <Icon name="image" size={26} />
-                    <span>No photo yet</span>
-                  </div>
-                )}
-              </Link>
+              {!rowsLayout && (
+                <Link className="card-grid-thumb" href={href} aria-label={`Edit ${title}`} tabIndex={-1}>
+                  {image ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- static/staged files, no Next Image optimizer on Cloudflare
+                    <img src={image} alt="" />
+                  ) : (
+                    <div className="card-grid-noimg">
+                      <Icon name="image" size={26} />
+                      <span>No photo yet</span>
+                    </div>
+                  )}
+                </Link>
+              )}
               <div className="card-grid-body">
                 {badge && <span className="pill">{badge}</span>}
+                {flag && <span className="pill">{flag}</span>}
                 <h3>{title}</h3>
                 {meta && <small>{meta}</small>}
                 {summary && <p>{summary}</p>}

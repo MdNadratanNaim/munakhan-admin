@@ -6,6 +6,7 @@ import type { ContentBlock, PageKey } from "@/lib/types";
 import { getAtPath } from "@/lib/object-path";
 import { type FieldPath, useContentStore } from "@/store/content-store";
 import { BlockListEditor } from "./BlockListEditor";
+import { EditablePdf } from "./EditablePdf";
 import { CardGrid } from "./CardGrid";
 import { EditableImage } from "./EditableImage";
 import { EditableText } from "./EditableText";
@@ -83,6 +84,13 @@ export function FieldRenderer({ pageKey, field, basePath }: FieldRendererProps) 
       return (
         <FieldShell label={field.label}>
           <EditableImage src={imagePreviewUrl(value as string | undefined)} onFile={(file) => stageFile(pageKey, path, file)} />
+        </FieldShell>
+      );
+
+    case "pdf":
+      return (
+        <FieldShell label={field.label}>
+          <EditablePdf src={imagePreviewUrl(value as string | undefined)} onFile={(file) => stageFile(pageKey, path, file)} onRemove={() => setField(pageKey, path, "")} />
         </FieldShell>
       );
 

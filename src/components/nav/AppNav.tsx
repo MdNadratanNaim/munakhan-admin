@@ -21,7 +21,7 @@ const PAGES: NavItem[] = [
   { href: "/education-experience", label: "Education & Experience", icon: "book" },
   { href: "/gis-projects", label: "Projects", icon: "pin" },
   { href: "/research-publications", label: "Publications", icon: "paper" },
-  { href: "/conferences", label: "Seminars & Conferences", icon: "mic" },
+  { href: "/conferences", label: "Conferences, Seminars and Training", icon: "mic" },
   { href: "/posters", label: "Poster presentations", icon: "presentation" }
 ];
 
@@ -40,10 +40,10 @@ function StorageMeter() {
     <div className={`storage-meter storage-meter-${level}`}>
       <div className="storage-meter-head">
         <Icon name="database" size={15} />
-        <span>Photo storage</span>
+        <span>Media storage</span>
         <strong>{pct}% used</strong>
       </div>
-      <div className="storage-meter-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Photo storage used">
+      <div className="storage-meter-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Media storage used">
         <span style={{ width: `${pct}%` }} />
       </div>
       <span className="storage-meter-text">

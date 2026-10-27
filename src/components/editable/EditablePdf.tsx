@@ -7,11 +7,13 @@ interface EditablePdfProps {
   /** Directly usable URL of the current PDF (a saved path resolved against imageBase, or a staged blob: URL). */
   src?: string;
   onFile: (file: File) => void;
+  /** When given, a "Remove PDF" button is shown while a PDF is present. */
+  onRemove?: () => void;
 }
 
 const MAX_BYTES = 50 * 1024 * 1024;
 
-export function EditablePdf({ src, onFile }: EditablePdfProps) {
+export function EditablePdf({ src, onFile, onRemove }: EditablePdfProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   function handle(file: File | undefined) {
@@ -35,6 +37,11 @@ export function EditablePdf({ src, onFile }: EditablePdfProps) {
         <button type="button" className="btn btn-small" onClick={() => inputRef.current?.click()}>
           {src ? "Replace PDF" : "Upload a PDF"}
         </button>
+        {src && onRemove && (
+          <button type="button" className="btn btn-small" onClick={onRemove}>
+            Remove PDF
+          </button>
+        )}
         <input
           ref={inputRef}
           type="file"

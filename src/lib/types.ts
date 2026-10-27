@@ -130,6 +130,10 @@ export interface PublicationItem {
   authors: string;
   status?: string;
   link?: string;
+  /** Optional PDF of the paper (photos/ path); the publication then has its own page showing it. */
+  pdf?: string;
+  /** Home page pinned copies only: the original has a PDF page, so the card links to it. */
+  hasPage?: boolean;
 }
 
 /** One poster or presentation: a card on the Poster presentations page plus its on-demand detail page. */

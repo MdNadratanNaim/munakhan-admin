@@ -54,3 +54,12 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy
+
+      # Housekeeping: keep only the 3 newest Worker versions in the Cloudflare dashboard.
+      # Never fails the deploy (a deployed version can't be deleted, and that's fine).
+      - name: Prune old Worker versions (keep 3)
+        continue-on-error: true
+        run: node scripts/prune-worker-versions.mjs
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
