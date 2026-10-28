@@ -27,12 +27,20 @@ export type FieldDef =
     }
   | { kind: "stringList"; key: string; label: string; itemLabel: string }
   | { kind: "group"; key: string; label: string; fields: FieldDef[] }
+  /**
+   * A titled block of the page, in the same order as on the website. It holds no data of its own (its fields
+   * keep the page's keys), it only says which part of the website the fields below it change.
+   * `anchor` is the id of that part on the website, so the preview can open right there.
+   */
+  | { kind: "section"; key: string; title: string; where: string; anchor?: string; fields: FieldDef[] }
   | {
       kind: "list";
       key: string;
       label: string;
       itemLabel: string;
       itemFields: FieldDef[];
+      /** Field whose text titles each item's header ("3 · Paper title") instead of just "Publication 3". */
+      headerKey?: string;
       addFrom?: PickSource;
       autoId?: boolean;
       /**
@@ -44,7 +52,7 @@ export type FieldDef =
   /** An ordered, article-style mix of paragraph and image blocks (and PDFs when `allowPdf`) — see BlockListEditor. */
   | { kind: "blockList"; key: string; label: string; allowPdf?: boolean }
   /** One uploaded PDF (stored as a path like the "image" field; can be replaced or removed). */
-  | { kind: "pdf"; key: string; label: string };
+  | { kind: "pdf"; key: string; label: string; /** Small upload control (file name, open, replace, remove) instead of the full viewer. */ compact?: boolean };
 
 /** How an item of a card-style list is summarised on its card (which of its fields to show). */
 export interface CardsConfig {
@@ -56,6 +64,11 @@ export interface CardsConfig {
   summaryKey?: string;
   /** A "select" field whose chosen option's label is shown as a badge on the card. */
   badgeKey?: string;
+  /**
+   * A "select" field the website groups the cards by (the Projects page shows one block per section, in the
+   * order of the section list). The editor then shows the same blocks in the same order.
+   */
+  groupKey?: string;
   /** Minimal one-card-per-row layout without a thumbnail (used for publications). */
   layout?: "rows";
   /** If this field holds a value, a small `flagLabel` chip is shown on the card (e.g. "PDF"). */
@@ -120,115 +133,174 @@ export const homeSchema: PageSchema = {
   key: "home",
   slug: "home",
   title: "Home",
+  // Same top-to-bottom order as the website's home page.
   fields: [
     {
-      kind: "group",
-      key: "site",
-      label: "Site",
+      kind: "section",
+      key: "header",
+      title: "Header",
+      where: "The bar at the very top of every page of the website",
+      fields: [{ kind: "text", key: "site.title", label: "Site name (top left, links to the home page)" }]
+    },
+    {
+      kind: "section",
+      key: "hero",
+      title: "Hero",
+      where: "The large photo at the top of the home page, with your name and subtitle over it",
+      anchor: "about",
       fields: [
-        { kind: "text", key: "title", label: "Site title" },
-        { kind: "text", key: "description", label: "Description" }
+        { kind: "text", key: "person.name", label: "Name (large heading on the photo)" },
+        { kind: "textarea", key: "person.intro", label: "Subtitle (small text under the name)" },
+        { kind: "image", key: "heroImage", label: "Background photo" }
       ]
     },
     {
-      kind: "group",
-      key: "person",
-      label: "Person",
+      kind: "section",
+      key: "news",
+      title: "Recent news",
+      where: "The dated list under the hero",
+      anchor: "news",
       fields: [
-        { kind: "text", key: "name", label: "Name" },
-        { kind: "textarea", key: "intro", label: "Intro" },
-        { kind: "text", key: "location", label: "Location" },
-        { kind: "text", key: "email", label: "Email" },
-        { kind: "text", key: "phone", label: "Phone" },
         {
           kind: "list",
-          key: "socials",
-          label: "Social links",
-          itemLabel: "Social link",
+          key: "news",
+          label: "News items (top of the list is shown first)",
+          itemLabel: "News item",
+          headerKey: "date",
           itemFields: [
-            { kind: "text", key: "label", label: "Label" },
-            { kind: "text", key: "url", label: "URL" },
-            { kind: "text", key: "icon", label: "Icon key" }
+            { kind: "text", key: "date", label: "Date (before the text)" },
+            { kind: "textarea", key: "text", label: "Text" },
+            { kind: "text", key: "link", label: "Link address (optional)" },
+            { kind: "text", key: "label", label: "Link wording (optional, default “Read more”)" }
           ]
         }
       ]
     },
-    { kind: "image", key: "heroImage", label: "Hero image" },
     {
-      kind: "list",
-      key: "news",
-      label: "Recent news",
-      itemLabel: "News item",
-      itemFields: [
-        { kind: "text", key: "date", label: "Date" },
-        { kind: "textarea", key: "text", label: "Text" },
-        { kind: "text", key: "link", label: "Link (optional)" },
-        { kind: "text", key: "label", label: "Link label (optional)" }
-      ]
-    },
-    {
-      kind: "list",
+      kind: "section",
       key: "gallery",
-      label: "Photo gallery",
-      itemLabel: "Photo",
-      itemFields: [
-        { kind: "image", key: "image", label: "Image" },
-        { kind: "text", key: "alt", label: "Photo caption" }
+      title: "Photo gallery",
+      where: "The big photo with thumbnails underneath, below the news",
+      anchor: "gallery",
+      fields: [
+        {
+          kind: "list",
+          key: "gallery",
+          label: "Photos (the first one is shown large when the page opens)",
+          itemLabel: "Photo",
+          headerKey: "alt",
+          itemFields: [
+            { kind: "image", key: "image", label: "Photo" },
+            { kind: "text", key: "alt", label: "Caption (shown under the large photo)" }
+          ]
+        }
       ]
     },
-    { kind: "list", key: "education", label: "Education (homepage abbreviated copy)", itemLabel: "Entry", itemFields: timelineItemFields },
-    { kind: "list", key: "experience", label: "Experience (homepage abbreviated copy)", itemLabel: "Entry", itemFields: timelineItemFields },
     {
-      kind: "list",
-      key: "projects",
-      label: "Pinned projects (independent copies, picked from Projects)",
-      itemLabel: "Pinned project",
-      itemFields: [
-        { kind: "text", key: "title", label: "Title" },
-        { kind: "image", key: "image", label: "Image" },
-        { kind: "textarea", key: "description", label: "Short description" },
-        { kind: "text", key: "meta", label: "Meta line" }
-      ],
-      addFrom: {
-        masterPageKey: "gisProjects",
-        masterPath: ["projects"],
-        itemTitle: (p) => String(p.title ?? "Untitled project"),
-        itemSubtitle: (p) => (p.meta ? String(p.meta) : undefined),
-        toItem: (p) => ({
-          id: p.id ?? "",
-          title: p.title ?? "",
-          image: p.image ?? "",
-          description: p.summary ?? "",
-          meta: p.meta ?? ""
-        })
-      }
-    },
-    {
-      kind: "list",
-      key: "publications",
-      label: "Pinned publications (independent copies, picked from Research Publications)",
-      itemLabel: "Pinned publication",
-      itemFields: publicationItemFields,
-      addFrom: {
-        masterPageKey: "researchPublications",
-        masterPath: ["publications"],
-        itemTitle: (p) => String(p.title ?? "Untitled publication"),
-        itemSubtitle: (p) => (p.year ? String(p.year) : undefined),
-        // The pinned copy keeps the card fields only; if the original has a PDF the card links to its page.
-        toItem: (p) => {
-          const { pdf, ...card } = p as Record<string, unknown>;
-          return pdf ? { ...card, hasPage: true } : { ...card };
-        }
-      }
-    },
-    {
-      kind: "group",
-      key: "contact",
-      label: "Contact",
+      kind: "section",
+      key: "education",
+      title: "Education & experience",
+      where: "The two timelines in the section below the gallery",
+      anchor: "education",
       fields: [
-        { kind: "text", key: "email", label: "Email" },
-        { kind: "text", key: "phone", label: "Phone" },
-        { kind: "text", key: "location", label: "Location" }
+        { kind: "list", key: "education", label: "Education entries", itemLabel: "Entry", headerKey: "institution", itemFields: timelineItemFields },
+        { kind: "list", key: "experience", label: "Experience entries (listed under the “Experience” sub-heading)", itemLabel: "Entry", headerKey: "institution", itemFields: timelineItemFields }
+      ]
+    },
+    {
+      kind: "section",
+      key: "projects",
+      title: "Projects",
+      where: "The project cards on the home page",
+      anchor: "projects",
+      fields: [
+        {
+          kind: "list",
+          key: "projects",
+          label: "Project cards (choose from the Projects page; each card is a copy you can reword here)",
+          itemLabel: "Pinned project",
+          headerKey: "title",
+          itemFields: [
+            { kind: "image", key: "image", label: "Card photo" },
+            { kind: "text", key: "title", label: "Title" },
+            { kind: "textarea", key: "description", label: "Description (under the title)" },
+            { kind: "text", key: "meta", label: "Small line at the bottom of the card" }
+          ],
+          addFrom: {
+            masterPageKey: "gisProjects",
+            masterPath: ["projects"],
+            itemTitle: (p) => String(p.title ?? "Untitled project"),
+            itemSubtitle: (p) => (p.meta ? String(p.meta) : undefined),
+            toItem: (p) => ({
+              id: p.id ?? "",
+              title: p.title ?? "",
+              image: p.image ?? "",
+              description: p.summary ?? "",
+              meta: p.meta ?? ""
+            })
+          }
+        }
+      ]
+    },
+    {
+      kind: "section",
+      key: "publications",
+      title: "Research publications",
+      where: "The publication list on the home page",
+      anchor: "publications",
+      fields: [
+        {
+          kind: "list",
+          key: "publications",
+          label: "Publications (choose from the Research Publications page; each entry is a copy you can reword here)",
+          itemLabel: "Pinned publication",
+          headerKey: "title",
+          itemFields: publicationItemFields,
+          addFrom: {
+            masterPageKey: "researchPublications",
+            masterPath: ["publications"],
+            itemTitle: (p) => String(p.title ?? "Untitled publication"),
+            itemSubtitle: (p) => (p.year ? String(p.year) : undefined),
+            // The pinned copy keeps the card fields only; if the original has a PDF the entry links to its page.
+            toItem: (p) => {
+              const { pdf, ...card } = p as Record<string, unknown>;
+              return pdf ? { ...card, hasPage: true } : { ...card };
+            }
+          }
+        }
+      ]
+    },
+    {
+      kind: "section",
+      key: "contact",
+      title: "Contact",
+      where: "The contact block near the bottom of the home page",
+      anchor: "contact",
+      fields: [
+        { kind: "text", key: "contact.email", label: "Email address" },
+        { kind: "text", key: "contact.phone", label: "Phone number" },
+        { kind: "text", key: "contact.location", label: "Location" }
+      ]
+    },
+    {
+      kind: "section",
+      key: "footer",
+      title: "Footer",
+      where: "The strip at the bottom of every page (the © line shows the name from the Hero)",
+      anchor: "contact",
+      fields: [
+        {
+          kind: "list",
+          key: "person.socials",
+          label: "Social icons",
+          itemLabel: "Social link",
+          headerKey: "label",
+          itemFields: [
+            { kind: "text", key: "label", label: "Name (e.g. LinkedIn)" },
+            { kind: "text", key: "url", label: "Link address (phone number for WhatsApp)" },
+            { kind: "text", key: "icon", label: "Icon (linkedin, whatsapp, facebook, instagram …)" }
+          ]
+        }
       ]
     }
   ]
@@ -296,20 +368,21 @@ export const gisProjectsSchema: PageSchema = {
       label: "Projects",
       itemLabel: "Project",
       autoId: true,
-      cards: { newItemTitle: "Untitled project", titleKey: "title", imageKey: "image", metaKey: "meta", summaryKey: "summary", badgeKey: "category" },
+      cards: { newItemTitle: "Untitled project", titleKey: "title", imageKey: "image", metaKey: "meta", summaryKey: "summary", badgeKey: "category", groupKey: "category" },
+      // Same order as the project's own page on the website: small line, title, photo, summary, sections.
       itemFields: [
-        { kind: "select", key: "category", label: "Project page section", optionsFrom: { path: ["categories"], valueKey: "id", labelKey: "label" } },
+        { kind: "text", key: "meta", label: "Small line above the title (also at the bottom of the card)" },
         { kind: "text", key: "title", label: "Title" },
-        { kind: "image", key: "image", label: "Image (optional)" },
-        { kind: "text", key: "meta", label: "Meta line" },
-        { kind: "textarea", key: "summary", label: "Card summary (shown on project cards)" },
+        { kind: "image", key: "image", label: "Photo (under the title; also the card photo — optional)" },
+        { kind: "textarea", key: "summary", label: "Summary (under the photo; also the card text)" },
         {
           kind: "list",
           key: "sections",
           label: "Detail page sections",
           itemLabel: "Section",
           itemFields: contentSectionItemFields
-        }
+        },
+        { kind: "select", key: "category", label: "Section it is listed under (decides where its card appears on the Projects page)", optionsFrom: { path: ["categories"], valueKey: "id", labelKey: "label" } }
       ]
     }
   ]
@@ -325,11 +398,14 @@ export const researchPublicationsSchema: PageSchema = {
     {
       kind: "list",
       key: "publications",
-      label: "Publications",
+      label: "Publications (shown in this order on the website)",
       itemLabel: "Publication",
+      headerKey: "title",
       autoId: true,
-      cards: { newItemTitle: "Untitled publication", titleKey: "title", metaKey: "year", summaryKey: "authors", layout: "rows", flagKey: "pdf", flagLabel: "PDF" },
-      itemFields: [...publicationItemFields, { kind: "pdf", key: "pdf", label: "PDF of the paper (optional — the publication then opens its own page showing it)" }]
+      itemFields: [
+        ...publicationItemFields,
+        { kind: "pdf", key: "pdf", label: "PDF (optional)", compact: true }
+      ]
     }
   ]
 };
@@ -374,10 +450,10 @@ export const postersSchema: PageSchema = {
       autoId: true,
       cards: { newItemTitle: "Untitled poster", titleKey: "title", imageKey: "image", metaKey: "meta", summaryKey: "summary" },
       itemFields: [
+        { kind: "text", key: "meta", label: "Small line above the title (event / date; also on the card)" },
         { kind: "text", key: "title", label: "Title" },
-        { kind: "text", key: "meta", label: "Event / date line" },
-        { kind: "image", key: "image", label: "Card image (optional)" },
-        { kind: "textarea", key: "summary", label: "Card summary (shown on the poster's card)" },
+        { kind: "image", key: "image", label: "Photo (under the title; also the card photo — optional)" },
+        { kind: "textarea", key: "summary", label: "Summary (under the photo; also the card text)" },
         {
           kind: "list",
           key: "sections",

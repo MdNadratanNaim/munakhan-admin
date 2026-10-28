@@ -1,5 +1,7 @@
-export const AUTH_COOKIE = "munakhan_admin_session";
-const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
+// "__Host-" makes browsers accept the cookie only over HTTPS, for this exact host, with no Domain attribute,
+// so another subdomain cannot set or overwrite it. It needs Secure, so it is used in production only.
+export const AUTH_COOKIE = process.env.NODE_ENV === "production" ? "__Host-munakhan_admin_session" : "munakhan_admin_session";
+const SESSION_TTL_SECONDS = 60 * 60 * 24;
 const encoder = new TextEncoder();
 
 function toHex(bytes: ArrayBuffer): string {
@@ -34,17 +36,35 @@ function equalStrings(left: string, right: string): boolean {
   return mismatch === 0;
 }
 
+function fromHex(hex: string): Uint8Array<ArrayBuffer> {
+  const bytes = new Uint8Array(new ArrayBuffer(hex.length / 2));
+  for (let i = 0; i < bytes.length; i += 1) bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  return bytes;
+}
+
+/**
+ * ADMIN_PASSWORD_HASH is either a salted PBKDF2 hash, "pbkdf2$<iterations>$<salt hex>$<hash hex>" (made with
+ * `node scripts/hash-password.mjs`), or the older plain SHA-256 hex digest, which still works.
+ */
 export async function passwordIsValid(password: string): Promise<boolean> {
-  const configuredHash = process.env.ADMIN_PASSWORD_HASH;
+  const configuredHash = process.env.ADMIN_PASSWORD_HASH?.trim();
   if (!configuredHash) throw new Error("ADMIN_PASSWORD_HASH is not configured.");
-  return equalStrings(await hashPassword(password), configuredHash.trim().toLowerCase());
+  if (configuredHash.toLowerCase().startsWith("pbkdf2$")) {
+    const [, iterations, salt, expected] = configuredHash.toLowerCase().split("$");
+    const count = Number(iterations);
+    if (!Number.isInteger(count) || count < 1 || !salt || !expected || salt.length % 2 || expected.length % 2) return false;
+    const material = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]);
+    const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: fromHex(salt), iterations: count }, material, (expected.length / 2) * 8);
+    return equalStrings(toHex(bits), expected);
+  }
+  return equalStrings(await hashPassword(password), configuredHash.toLowerCase());
 }
 
 export async function createSessionCookie(): Promise<string> {
   const secret = process.env.AUTH_SESSION_SECRET;
   if (!secret) throw new Error("AUTH_SESSION_SECRET is not configured.");
   const expires = Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS;
-  const payload = `${expires}.${process.env.ADMIN_PASSWORD_HASH?.trim().toLowerCase() ?? ""}`;
+  const payload = `${expires}.${process.env.ADMIN_PASSWORD_HASH?.trim().toLowerCase() ?? ""}`; // a new password signs everyone out
   return `${expires}.${await hmac(secret, payload)}`;
 }
 

@@ -11,6 +11,8 @@ const JSON_FILES = new Set<string>([...Object.values(PAGE_FILENAMES), SITE_TEXT_
 /** Only page JSON files and photos/ may be written — nothing else in the repo can be touched through this route. */
 function isAllowedPath(path: unknown): path is string {
   if (typeof path !== "string" || path.includes("..") || path.includes("\\") || path.startsWith("/")) return false;
+  // Every part between slashes must be a real name: Git rejects empty parts, parts ending in "." or a space, and control characters.
+  if (path.split("/").some((part) => part === "" || /[.\s]$/.test(part) || /[\u0000-\u001f]/.test(part))) return false;
   return JSON_FILES.has(path) || (path.startsWith(PHOTOS_PREFIX) && path.length > PHOTOS_PREFIX.length);
 }
 
@@ -40,7 +42,10 @@ export async function POST(request: Request) {
     const provider = getDataProvider();
 
     // Storage limit: measure what photos/ WOULD weigh after this save, before anything is sent to GitHub.
-    const check = checkPhotosLimit(await provider.getPhotoSizes(), body.databaseFiles, deletions, photosLimitBytes());
+    const sizes = await provider.getPhotoSizes();
+    // Deleting a file that is not in the repo makes GitHub refuse the whole commit, so only existing files are listed.
+    const removals = deletions.filter((p) => sizes.has(p));
+    const check = checkPhotosLimit(sizes, body.databaseFiles, removals, photosLimitBytes());
     if (!check.ok) {
       return NextResponse.json({ error: limitMessage(check), code: "STORAGE_LIMIT", ...check }, { status: 413 });
     }
@@ -49,7 +54,7 @@ export async function POST(request: Request) {
     const result = await provider.commit({
       message: `Update content — ${new Date().toISOString()}`,
       databaseFiles: body.databaseFiles,
-      databaseFileDeletions: deletions
+      databaseFileDeletions: removals
     });
     return NextResponse.json(result);
   } catch (err) {

@@ -20,9 +20,19 @@ interface ListEditorProps {
   addFrom?: PickSource;
   /** Items get an automatically generated unique id (used by ?view= detail links). */
   autoId?: boolean;
+  /** Field whose text titles each item's header. */
+  headerKey?: string;
 }
 
-export function ListEditor({ pageKey, path, items, itemFields, itemLabel, addFrom, autoId }: ListEditorProps) {
+function plain(value: unknown): string {
+  return String(value ?? "")
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<[^>]*>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function ListEditor({ pageKey, path, items, itemFields, itemLabel, addFrom, autoId, headerKey }: ListEditorProps) {
   const addListItem = useContentStore((s) => s.addListItem);
   const removeListItemAt = useContentStore((s) => s.removeListItemAt);
   const moveListItem = useContentStore((s) => s.moveListItem);
@@ -32,14 +42,15 @@ export function ListEditor({ pageKey, path, items, itemFields, itemLabel, addFro
 
   return (
     <div className="list-editor">
-      {items.map((_, index) => (
+      {items.map((item, index) => (
         // Index as key is fine here: identity comes from position in an
         // ordered, reorderable list with no stable external id to rely on.
         // eslint-disable-next-line react/no-array-index-key
         <div className="list-item-card" key={index}>
           <div className="list-item-header">
-            <span>
-              {itemLabel} {index + 1}
+            <span className="list-item-title">
+              <b>{index + 1}</b>
+              {(headerKey && plain((item as Record<string, unknown> | null)?.[headerKey])) || itemLabel}
             </span>
             <div className="row-tools">
               <button type="button" className="icon-btn icon-btn-sm" disabled={index === 0} onClick={() => moveListItem(pageKey, path, index, index - 1)} aria-label={`Move ${noun} ${index + 1} up`} title="Move up">

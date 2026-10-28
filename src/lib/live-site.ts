@@ -59,7 +59,7 @@ export function previewCsp(dataHosts: string[]): string {
     `img-src ${hosts} blob: data: https:`,
     `connect-src ${hosts} blob: data:`,
     `worker-src blob: ${site}`,
-    `frame-src ${hosts} blob:`,
+    `frame-src ${hosts} blob: https:`,
     `media-src ${hosts} blob:`,
     `base-uri ${site}`,
     `form-action 'none'`,

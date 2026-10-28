@@ -7,7 +7,12 @@ import { UnsavedChangesGuard } from "@/components/nav/UnsavedChangesGuard";
 import { SaveBar } from "@/components/nav/SaveBar";
 
 export const metadata: Metadata = {
-  title: "Website editor"
+  title: { default: "Website editor", template: "%s · Website editor" },
+  description: "Private editor.",
+  // Not for search engines, archives or link previews.
+  robots: { index: false, follow: false, nocache: true, noarchive: true, nosnippet: true, noimageindex: true, googleBot: { index: false, follow: false, noarchive: true, nosnippet: true, noimageindex: true } },
+  icons: { icon: [{ url: "/icon.svg", type: "image/svg+xml" }, { url: "/favicon.ico", sizes: "any" }], apple: "/apple-icon.png" },
+  formatDetection: { telephone: false, email: false, address: false }
 };
 
 export const viewport: Viewport = {

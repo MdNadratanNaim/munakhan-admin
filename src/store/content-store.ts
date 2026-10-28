@@ -62,6 +62,8 @@ interface ContentStore {
    * route if you click around inside the simulated site's own nav. Exiting preview should
    * return you to *this* page, not wherever the admin route originally was. */
   previewPageKey: PageKey | null;
+  /** Id of the part of the website the preview should scroll to when it opens (e.g. "news"). */
+  previewAnchor: string | null;
   sidebarCollapsed: boolean;
 
   setDatabaseIndex: (index: DatabaseIndex) => void;
@@ -86,7 +88,7 @@ interface ContentStore {
   redo: () => void;
   resetAll: () => void;
   save: () => Promise<void>;
-  enterPreview: (pageKey: PageKey) => void;
+  enterPreview: (pageKey: PageKey, anchor?: string) => void;
   exitPreview: () => void;
   setPreviewPageKey: (pageKey: PageKey) => void;
   toggleSidebarCollapsed: () => void;
@@ -134,6 +136,7 @@ export const useContentStore = create<ContentStore>((set, get) => ({
   siteTextDirty: false,
   previewMode: false,
   previewPageKey: null,
+  previewAnchor: null,
   sidebarCollapsed: false,
 
   setDatabaseIndex: (index) => set({ databaseIndex: index }),
@@ -346,8 +349,8 @@ export const useContentStore = create<ContentStore>((set, get) => ({
     }
   },
 
-  enterPreview: (pageKey) => set({ previewMode: true, previewPageKey: pageKey }),
-  exitPreview: () => set({ previewMode: false }),
+  enterPreview: (pageKey, anchor) => set({ previewMode: true, previewPageKey: pageKey, previewAnchor: anchor ?? null }),
+  exitPreview: () => set({ previewMode: false, previewAnchor: null }),
   setPreviewPageKey: (pageKey) => set({ previewPageKey: pageKey }),
   toggleSidebarCollapsed: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
 
@@ -392,7 +395,9 @@ function computeOrphanedImageDeletions(state: { original: PagesState; draft: Pag
     }
   }
 
-  return [...droppedPaths].map((p) => `photos/${p}`);
+  // Only files kept in this repo's photos/ folder can be deleted. A PDF or photo given as a full web address
+  // (https://…) lives on another site: it is simply dropped from the page, there is nothing here to delete.
+  return [...droppedPaths].filter((p) => !/^[a-z][a-z0-9+.-]*:/i.test(p) && !p.startsWith("/") && !p.includes("//")).map((p) => `photos/${p}`);
 }
 
 /**

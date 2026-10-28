@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { EditBadge } from "./EditBadge";
-import { FormatBar, useTextFormatter } from "./FormatBar";
-import { useAutoSize } from "./useAutoSize";
+import { RichTextBox } from "./RichTextBox";
 import { toSafeHtml } from "@/lib/safe-html";
 
 interface EditableTextareaProps {
@@ -13,58 +12,31 @@ interface EditableTextareaProps {
   placeholder?: string;
 }
 
+/** Same as EditableText, for longer text: Enter starts a new line and editing ends when you click elsewhere. */
 export function EditableTextarea({ value, onCommit, className = "", placeholder }: EditableTextareaProps) {
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(value);
   const [viewHeight, setViewHeight] = useState(0);
-  const ref = useRef<HTMLTextAreaElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const cancelled = useRef(false);
-  const formatter = useTextFormatter(ref, draft, setDraft);
-
-  useEffect(() => setDraft(value), [value]);
-  useEffect(() => {
-    if (editing) ref.current?.focus();
-  }, [editing]);
-  useAutoSize(ref, editing, draft, viewHeight);
 
   function startEditing() {
-    cancelled.current = false;
-    // Remember how tall the text is displayed, so the edit box starts at least that tall.
+    // The edit box starts at least as tall as the text was displayed, so all of it stays visible.
     setViewHeight(viewRef.current?.getBoundingClientRect().height ?? 0);
     setEditing(true);
   }
 
-  function commitAndClose() {
-    setEditing(false);
-    if (!cancelled.current && draft !== value) onCommit(draft);
-  }
-
   if (editing) {
     return (
-      <div className="edit-wrap" ref={wrapRef}>
-        <FormatBar formatter={formatter} wrapRef={wrapRef} onLeave={commitAndClose} hint="Click outside to apply · Esc to cancel" />
-        <textarea
-          ref={ref}
-          className={`editable-input editable-textarea ${className}`}
-          value={draft}
-          placeholder={placeholder}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={(e) => {
-            if (wrapRef.current?.contains(e.relatedTarget as Node | null)) return;
-            commitAndClose();
-          }}
-          onKeyDown={(e) => {
-            if (formatter.handleShortcut(e)) return;
-            if (e.key === "Escape") {
-              cancelled.current = true;
-              setDraft(value);
-              setEditing(false);
-            }
-          }}
-        />
-      </div>
+      <RichTextBox
+        multiline
+        value={value}
+        className={className}
+        placeholder={placeholder}
+        minHeight={viewHeight}
+        onDone={(next) => {
+          setEditing(false);
+          if (next !== null) onCommit(next);
+        }}
+      />
     );
   }
 

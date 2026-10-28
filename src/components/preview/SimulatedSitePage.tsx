@@ -51,8 +51,15 @@ export function SimulatedSitePage({ schema, viewId }: { schema: PageSchema; view
   const databaseIndex = useContentStore((s) => s.databaseIndex);
   const imagePreviewUrl = useContentStore((s) => s.imagePreviewUrl);
   const setPreviewPageKey = useContentStore((s) => s.setPreviewPageKey);
+  // Set when the preview was opened from a section's "See on site" button; the frame scrolls to that part.
+  const anchor = useContentStore((s) => s.previewAnchor);
 
-  const src = useMemo(() => `/api/live/page?path=${encodeURIComponent(sitePathFor(schema, viewId))}`, [schema, viewId]);
+  const src = useMemo(
+    () => `/api/live/page?path=${encodeURIComponent(sitePathFor(schema, viewId))}${anchor ? `&hash=${encodeURIComponent(anchor)}` : ""}`,
+    // The anchor only matters when the frame is first opened; later changes must not reload it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [schema, viewId]
+  );
 
   const buildState = useCallback(() => {
     if (!databaseIndex) return null;
@@ -62,7 +69,10 @@ export function SimulatedSitePage({ schema, viewId }: { schema: PageSchema; view
       const data = draft[key];
       if (data) pages[key] = resolveImagesForPreview(schemaForPageKey(key).fields, data, imagePreviewUrl);
     }
-    return { index: { ...databaseIndex, siteText: urls.siteText }, urls, pages, siteText: siteTextDraft };
+    // Every image and PDF in `pages` is already a complete URL (saved file or unsaved upload). The website joins
+    // imageBase and a path unless the path is http(s), which would break an unsaved upload's blob: URL, so the
+    // base is emptied here for the preview only.
+    return { index: { ...databaseIndex, imageBase: "", siteText: urls.siteText }, urls, pages, siteText: siteTextDraft };
   }, [databaseIndex, draft, siteTextDraft, imagePreviewUrl]);
 
   const postState = useCallback(() => {

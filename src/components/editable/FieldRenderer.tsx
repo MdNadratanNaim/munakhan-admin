@@ -5,6 +5,7 @@ import { fieldReactKey, selectOptions } from "@/lib/page-schemas";
 import type { ContentBlock, PageKey } from "@/lib/types";
 import { getAtPath } from "@/lib/object-path";
 import { type FieldPath, useContentStore } from "@/store/content-store";
+import { Icon } from "@/components/ui/Icon";
 import { BlockListEditor } from "./BlockListEditor";
 import { EditablePdf } from "./EditablePdf";
 import { CardGrid } from "./CardGrid";
@@ -36,10 +37,36 @@ export function FieldRenderer({ pageKey, field, basePath }: FieldRendererProps) 
   const moveListItem = useContentStore((s) => s.moveListItem);
   const stageFile = useContentStore((s) => s.stageFile);
   const imagePreviewUrl = useContentStore((s) => s.imagePreviewUrl);
+  const enterPreview = useContentStore((s) => s.enterPreview);
 
   if (!page) return null;
 
-  const path: FieldPath = [...basePath, field.key];
+  if (field.kind === "section") {
+    return (
+      <section className="home-section" id={`section-${field.key}`}>
+        <header className="home-section-head">
+          <div>
+            <h2>{field.title}</h2>
+            <p>{field.where}</p>
+          </div>
+          {field.anchor && (
+            <button type="button" className="btn btn-small" onClick={() => enterPreview(pageKey, field.anchor)} title="Open the preview at this part of the website">
+              <Icon name="eye" size={15} />
+              <span>See on site</span>
+            </button>
+          )}
+        </header>
+        <div className="home-section-body">
+          {field.fields.map((f) => (
+            <FieldRenderer key={fieldReactKey(f)} pageKey={pageKey} field={f} basePath={basePath} />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  // A key like "person.name" reaches into a nested object.
+  const path: FieldPath = [...basePath, ...field.key.split(".")];
   const value = getAtPath(page, path);
 
   switch (field.kind) {
@@ -90,7 +117,7 @@ export function FieldRenderer({ pageKey, field, basePath }: FieldRendererProps) 
     case "pdf":
       return (
         <FieldShell label={field.label}>
-          <EditablePdf src={imagePreviewUrl(value as string | undefined)} onFile={(file) => stageFile(pageKey, path, file)} onRemove={() => setField(pageKey, path, "")} />
+          <EditablePdf compact={field.compact} src={imagePreviewUrl(value as string | undefined)} onFile={(file) => stageFile(pageKey, path, file)} onRemove={() => setField(pageKey, path, "")} />
         </FieldShell>
       );
 
@@ -136,6 +163,7 @@ export function FieldRenderer({ pageKey, field, basePath }: FieldRendererProps) 
             itemLabel={field.itemLabel}
             addFrom={field.addFrom}
             autoId={field.autoId}
+            headerKey={field.headerKey}
           />
         </FieldShell>
       );

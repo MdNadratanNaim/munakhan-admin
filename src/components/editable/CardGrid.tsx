@@ -75,6 +75,18 @@ export function CardGrid({ pageKey, path, items, field }: CardGridProps) {
   });
   const shown = filtering ? rows.filter((r) => `${r.title} ${r.meta} ${r.summary} ${r.badge}`.toLowerCase().includes(needle)) : rows;
 
+  // The website shows the cards of a grouped list block by block, in the order of the section list; an item
+  // whose section is missing goes into the last block. Without grouping there is a single block, in list order.
+  const groupDef = cards.groupKey ? field.itemFields.find((f) => f.key === cards.groupKey) : undefined;
+  const groupOptions = groupDef && groupDef.kind === "select" ? selectOptions(groupDef, pageData) : [];
+  const grouped = groupOptions.length > 0 && !filtering;
+  const groups: Array<{ id: string; label: string; rows: typeof shown }> = grouped
+    ? [
+        ...groupOptions.map((o) => ({ id: o.value, label: o.label, rows: shown.filter((r) => String((items[r.index] as Record<string, unknown>)[cards.groupKey ?? ""] ?? "") === o.value) })),
+        { id: "__other", label: "More projects (no section chosen)", rows: shown.filter((r) => !groupOptions.some((o) => o.value === String((items[r.index] as Record<string, unknown>)[cards.groupKey ?? ""] ?? ""))) }
+      ].filter((g) => g.id !== "__other" || g.rows.length > 0)
+    : [{ id: "all", label: "", rows: shown }];
+
   return (
     <div className="card-section">
       <div className="card-section-bar">
@@ -93,69 +105,76 @@ export function CardGrid({ pageKey, path, items, field }: CardGridProps) {
         </button>
       </div>
 
-      <div className={rowsLayout ? "card-grid card-grid-rows" : "card-grid"}>
-        {shown.map(({ index, id, title, meta, summary, badge, image, flag }) => {
-          const href = `/${PAGE_KEY_TO_SLUG[pageKey]}/${encodeURIComponent(id)}`;
-          return (
-            <article className="card-grid-item" key={id || index}>
-              {!rowsLayout && (
-                <Link className="card-grid-thumb" href={href} aria-label={`Edit ${title}`} tabIndex={-1}>
-                  {image ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- static/staged files, no Next Image optimizer on Cloudflare
-                    <img src={image} alt="" />
-                  ) : (
-                    <div className="card-grid-noimg">
-                      <Icon name="image" size={26} />
-                      <span>No photo yet</span>
+      {groups.map((group) => (
+        <section className="card-group" key={group.id}>
+          {grouped && (
+            <h3 className="card-group-title">
+              {group.label}
+              <span>{group.rows.length}</span>
+            </h3>
+          )}
+          <div className={rowsLayout ? "card-grid card-grid-rows" : "card-grid"}>
+            {group.rows.map((row, pos) => {
+              const { index, id, title, meta, summary, badge, image, flag } = row;
+              const href = `/${PAGE_KEY_TO_SLUG[pageKey]}/${encodeURIComponent(id)}`;
+              const before = group.rows[pos - 1];
+              const after = group.rows[pos + 1];
+              return (
+                <article className="card-grid-item" key={id || index}>
+                  {!rowsLayout && (
+                    <Link className="card-grid-thumb" href={href} aria-label={`Edit ${title}`} tabIndex={-1}>
+                      {image ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- static/staged files, no Next Image optimizer on Cloudflare
+                        <img src={image} alt="" />
+                      ) : (
+                        <div className="card-grid-noimg">
+                          <Icon name="image" size={26} />
+                          <span>No photo yet</span>
+                        </div>
+                      )}
+                    </Link>
+                  )}
+                  <div className="card-grid-body">
+                    {badge && !grouped && <span className="pill">{badge}</span>}
+                    {flag && <span className="pill">{flag}</span>}
+                    <h3>{title}</h3>
+                    {meta && <small>{meta}</small>}
+                    {summary && <p>{summary}</p>}
+                  </div>
+                  <div className="card-grid-actions">
+                    <Link className="btn btn-primary btn-small card-grid-edit" href={href}>
+                      <Icon name="pencil" size={15} />
+                      <span>Edit</span>
+                    </Link>
+                    <div className="card-grid-tools">
+                      {!filtering && (
+                        <>
+                          <button type="button" className="icon-btn icon-btn-sm" disabled={!before} onClick={() => before && moveListItem(pageKey, path, index, before.index)} aria-label={`Move ${title} earlier`} title="Move earlier">
+                            <Icon name="arrowLeft" size={16} />
+                          </button>
+                          <button type="button" className="icon-btn icon-btn-sm" disabled={!after} onClick={() => after && moveListItem(pageKey, path, index, after.index)} aria-label={`Move ${title} later`} title="Move later">
+                            <Icon name="arrowRight" size={16} />
+                          </button>
+                        </>
+                      )}
+                      <button type="button" className="icon-btn icon-btn-sm icon-btn-danger" onClick={() => remove(index, title)} aria-label={`Delete ${title}`} title={`Delete this ${noun}`}>
+                        <Icon name="trash" size={16} />
+                      </button>
                     </div>
-                  )}
-                </Link>
-              )}
-              <div className="card-grid-body">
-                {badge && <span className="pill">{badge}</span>}
-                {flag && <span className="pill">{flag}</span>}
-                <h3>{title}</h3>
-                {meta && <small>{meta}</small>}
-                {summary && <p>{summary}</p>}
-              </div>
-              <div className="card-grid-actions">
-                <Link className="btn btn-primary btn-small card-grid-edit" href={href}>
-                  <Icon name="pencil" size={15} />
-                  <span>Edit</span>
-                </Link>
-                <div className="card-grid-tools">
-                  {!filtering && (
-                    <>
-                      <button type="button" className="icon-btn icon-btn-sm" disabled={index === 0} onClick={() => moveListItem(pageKey, path, index, index - 1)} aria-label={`Move ${title} earlier`} title="Move earlier">
-                        <Icon name="arrowLeft" size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        className="icon-btn icon-btn-sm"
-                        disabled={index === items.length - 1}
-                        onClick={() => moveListItem(pageKey, path, index, index + 1)}
-                        aria-label={`Move ${title} later`}
-                        title="Move later"
-                      >
-                        <Icon name="arrowRight" size={16} />
-                      </button>
-                    </>
-                  )}
-                  <button type="button" className="icon-btn icon-btn-sm icon-btn-danger" onClick={() => remove(index, title)} aria-label={`Delete ${title}`} title={`Delete this ${noun}`}>
-                    <Icon name="trash" size={16} />
-                  </button>
-                </div>
-              </div>
-            </article>
-          );
-        })}
-        {shown.length === 0 && (
-          <div className="empty-state empty-state-inline">
-            <Icon name="search" size={26} />
-            <h3>{filtering ? `No matches for “${filter}”` : `No ${noun}s yet`}</h3>
+                  </div>
+                </article>
+              );
+            })}
+            {group.rows.length === 0 && grouped && <p className="card-group-empty">No {noun}s in this section yet.</p>}
           </div>
-        )}
-      </div>
+        </section>
+      ))}
+      {shown.length === 0 && (
+        <div className="empty-state empty-state-inline">
+          <Icon name="search" size={26} />
+          <h3>{filtering ? `No matches for “${filter}”` : `No ${noun}s yet`}</h3>
+        </div>
+      )}
     </div>
   );
 }

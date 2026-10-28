@@ -161,7 +161,34 @@ Each project's own detail-page sections (heading + text/photos) are added from i
 
 These two pages show a grid of cards (add, delete, reorder with ← →). **Edit content** on a card opens that item's own page at `/<page>/<item id>` (e.g. `/gis-projects/project-1`, `/posters/poster-ab12cd34`), where all of its fields are edited. A page opts in with `cards: {...}` on its list field in `src/lib/page-schemas.ts`. In Poster presentations a section's content can also be a PDF (`allowPdf` on the `blockList` field): the PDF is staged and committed with Save like an image, and previewed with the same viewer the website uses (the live site's own `pdf-viewer.js`, fetched on request via `/api/live/asset/pdf-viewer.js`, plus the vendored PDF.js build in `public/vendor/pdfjs/`).
 
+Research Publications is a plain list instead: every field of a publication is edited in its row, and the optional PDF is a small
+upload control (file name, Open, Replace, Remove) with no on-demand page to build. A publication with a PDF gets its own page on the
+website automatically, drawn by the site itself; the Preview shows it.
+
 Education & Experience has a Certificates list (image + caption).
+
+## Text formatting
+
+Text boxes work like a word processor: Bold, Italic, Underline, superscript, subscript, links, line breaks and clear formatting,
+with the text shown the way the website shows it. The HTML the website stores (`<b>`, `<i>`, `<u>`, `<sup>`, `<sub>`, `<a>`,
+`<br>`) is written when editing ends (`src/lib/safe-html.ts`, `src/components/editable/RichTextBox.tsx`); nobody types a tag.
+Pasted text is inserted as plain text, and a box that was opened but not changed never marks the page as edited.
+
+## Security
+
+- Sign-in: `ADMIN_PASSWORD_HASH` should be the salted PBKDF2 value from `node scripts/hash-password.mjs "<password, 12+ characters>"`
+  (the older plain SHA-256 digest still works). Sessions last 24 hours, use an `__Host-` cookie (HTTPS only, this host only) and end
+  for everyone when the password hash or `AUTH_SESSION_SECRET` changes. Five wrong passwords from one address lock sign-in for 15 minutes
+  (per server instance — add the Cloudflare rate-limiting rule below for a firm limit).
+- Requests that change anything must come from this site's own pages (the `Origin` header is checked).
+- Search engines and bots: `X-Robots-Tag`, `<meta name="robots">` and `robots.txt` all say no-index / no-archive / no-AI-training, and
+  `middleware.ts` answers crawlers, scrapers, AI agents and command-line clients (user-agent match) with 403 before anything else runs.
+  User-agent matching only stops honest or lazy bots. For the rest, in the Cloudflare dashboard: Security → Bot Fight Mode on, a WAF
+  rate-limiting rule on `POST /api/auth/login` (e.g. 10 requests per minute per IP), and, if you always work from the same few places,
+  a WAF custom rule that blocks everything else (or put the Worker behind Cloudflare Access).
+- Responses carry `nosniff`, `X-Frame-Options: SAMEORIGIN` (the live preview is a same-origin frame), HSTS, a strict
+  Permissions-Policy, same-origin COOP/CORP, and `no-store` on the API.
+
 
 ## Known simplifications (first pass)
 
@@ -169,14 +196,12 @@ Education & Experience has a Certificates list (image + caption).
   (matching the "feels like editing a document" requirement) rather than a
   separate sidebar list — the sidebar is reserved for save/undo/redo/reset
   and the cross-page pin pickers, which don't fit naturally inline.
-- Home currently renders through the same generic `PageEditor` as every
-  other page rather than a bespoke hero/gallery-carousel layout — every
-  field is editable and correct, just not laid out identically to the
-  live hero section yet.
+- Home is laid out as titled blocks (Header, Hero, Recent news, Photo gallery, Education & experience, Projects,
+  Research publications, Contact, Footer) in the same top-to-bottom order as the website, each saying which part of
+  the site it changes and with a "See on site" button that opens the preview at that part. It is still drawn from
+  the schema, not hand-built.
 - Undo/redo covers JSON field edits; undoing past an image upload doesn't
   un-stage that file (it stays queued until Save or Reset).
-- No authentication yet, by design — see the original spec for what to
-  layer on later (auth, roles, multiple admins, draft/approval workflow).
 
 ## Deploying
 

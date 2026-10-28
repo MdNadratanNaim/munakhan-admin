@@ -24,7 +24,7 @@ export function PageEditor({ schema }: { schema: PageSchema }) {
   // The heading is what visitors see, so it comes first; the browser-tab title sits quietly beneath it.
   const chrome = schema.fields.filter(isChrome).sort((a, b) => (a.key === "heading" ? -1 : b.key === "heading" ? 1 : 0));
   const rest = schema.fields.filter((f) => !isChrome(f));
-  const outline = rest.map((f) => ({ id: `field-${fieldReactKey(f)}`, label: shortLabel(f.label) }));
+  const outline = rest.map((f) => ({ id: `field-${fieldReactKey(f)}`, label: f.kind === "section" ? f.title : shortLabel(f.label) }));
 
   return (
     <div className="editor-body">

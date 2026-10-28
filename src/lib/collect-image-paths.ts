@@ -14,7 +14,11 @@ export function collectImagePaths(fields: FieldDef[], data: unknown): Set<string
     if (node == null || typeof node !== "object") return;
     const record = node as Record<string, unknown>;
     for (const field of fieldList) {
-      const value = record[field.key];
+      if (field.kind === "section") {
+        walk(field.fields, node);
+        continue;
+      }
+      const value = field.key.split(".").reduce<unknown>((cur, seg) => (cur && typeof cur === "object" ? (cur as Record<string, unknown>)[seg] : undefined), record);
       if (field.kind === "image" || field.kind === "pdf") {
         if (typeof value === "string" && value) paths.add(value);
       } else if (field.kind === "group") {

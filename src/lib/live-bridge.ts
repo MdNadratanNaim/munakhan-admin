@@ -94,7 +94,7 @@ export function bridgeSource(siteOrigin: string): string {
     var el = document.getElementById(wantedHash);
     if (el) el.scrollIntoView();
   }
-  window.addEventListener('load', function () { setTimeout(scrollToHash, 400); });
+  window.addEventListener('load', function () { setTimeout(scrollToHash, 400); setTimeout(scrollToHash, 1200); });
 
   // ---- 3. navigation stays inside the preview
   document.addEventListener('click', function (e) {

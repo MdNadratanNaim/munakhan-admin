@@ -17,8 +17,13 @@ export function utf8ToBase64(text: string): string {
 }
 
 export function generateImageFilename(originalName: string): string {
+  // Keep only a plain extension (letters and digits): names like "paper v2. final " or "scan.pdf (1)" must never leak into a repo path.
   const dot = originalName.lastIndexOf(".");
-  const ext = dot === -1 ? "" : originalName.slice(dot);
-  const id = Math.random().toString(36).slice(2, 8);
-  return `${Date.now()}-${id}${ext}`;
+  const rawExt = dot === -1 ? "" : originalName.slice(dot + 1).trim().toLowerCase();
+  const ext = /^[a-z0-9]{1,8}$/.test(rawExt) ? `.${rawExt}` : "";
+  const random =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID().replace(/-/g, "").slice(0, 8)
+      : Math.random().toString(36).slice(2, 10).padEnd(8, "0");
+  return `${Date.now()}-${random}${ext}`;
 }
